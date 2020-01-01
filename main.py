@@ -11,17 +11,21 @@ import papiHilfe
 from portHelper import PortHelper
 import inspect 
 import sys
+from debug import debug
 
+debug("*****  DEBUG *******")
 
+us = PortHelper.getSensor(UltrasonicSensor)
 
 baseSpeed=50
 roboter=Roboter(speed=baseSpeed)
+
 
 speed = Speed(roboter=roboter)
 speed.start()
 
 
-us = PortHelper.getSensor(UltrasonicSensor)
+
 
 while 1:
     

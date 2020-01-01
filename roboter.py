@@ -4,6 +4,8 @@ from pybricks.parameters import (Port, Stop, Direction, Button, Color, SoundFile
 from pybricks.tools import print, wait, StopWatch
 from pybricks.robotics import DriveBase
 from portHelper import PortHelper
+from simple_pid.PID import PID
+from debug import debug
 
 class Roboter():
 
@@ -15,19 +17,29 @@ class Roboter():
         self.speed = speed
         self.steuer = 0
         self.gyro=PortHelper.getSensor(GyroSensor)
+        self.us = PortHelper.getSensor(UltrasonicSensor)
         motors = PortHelper.getMotors()
         if self.gyro:
             # gyrosensor um die richitgen motoren zu finden
+            checkDegs=30
+            checkSpeed=300
             for m in motors:
                 self.gyro.reset_angle(0)
-                m.run_angle(50,90)
-                if self.gyro.angle() > 0:
-                    print("Rechter ",m)
+                m.run_angle(checkSpeed,checkDegs)
+                angle = self.gyro.angle()
+                debug("Motorfind: angle {}".format(angle))
+                if angle > 0:
+                    print("Rechter Motor","{}".format(m).split("\n")[2].replace("\t",""))
+                    debug(m,level=5)
                     self.motor_rechts = m
-                elif self.gyro.angle() < 0:
-                    print("Linker ",m)
+                elif angle < 0:
+                    print("Linker Motor","{}".format(m).split("\n")[2].replace("\t",""))
+                    debug(m,level=5)
                     self.motor_links = m 
-        else:
+                m.run_angle(-1*checkSpeed,checkDegs)
+
+        if not (self.motor_rechts or self.motor_links):
+            debug("Motoren raten")
             self.motor_rechts = motors[0]
             self.motor_links  = motors[1]
 
@@ -74,6 +86,21 @@ class Roboter():
             self.driveBase.drive(speed,stearing)
 
     def ausweichen(self):
+        # if self.us and self.us.distance() < 2550:
+        #     self.__ausweichen_pid()
+        # else:
+            self.__ausweichen_simpel()
+
+    def __ausweichen_pid(self):
+        pid=PID(1,0,0,2551,None)
+        sw = StopWatch()
+        while 1 or sw.time() < 13000:
+            a = pid(self.us.distance())
+            debug("PID ausweichen: Steuer {} dist {}".format(a,self.us.distance()))
+            self.drive(0,a)
+            wait(100)
+
+    def __ausweichen_simpel(self):
         if not self.speed == 0:
             speed=self.speed*-1
             time=abs(100/speed)

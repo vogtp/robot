@@ -32,8 +32,8 @@ class PortHelper:
                 s=s.replace("<","").split(" ")[0]
                 print("Found {} on {}".format(s,name))
                 motors.append(motor)
-            except: # Exception as e:
-               # print(e)
+            except:# Exception as e:
+                #print(e)
                 pass
         return motors
 
