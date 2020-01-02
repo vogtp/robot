@@ -13,8 +13,13 @@ import inspect
 import sys
 from debug import debug
 from simple_pid.PID import PID
+from reden import Reden
 
 baseSpeed=50
+
+Reden.speak("Hallo Andrin und Lauri")
+
+#sys.exit()
 
 
 def lineFollower():
@@ -46,13 +51,13 @@ def lineFollower():
             spd-=error
             if spd < 0:
                 if abs(stear) < 5:
-                    spd = 5
+                    spd = 3
                 else:
                     spd = 0
         if error > 5:
             spd-=1
             if spd < 0:
-                spd = 15
+                spd = 3
         else:
             spd+=1
         if spd > 50:
