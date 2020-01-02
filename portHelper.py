@@ -21,6 +21,7 @@ class PortHelper:
                 return sensor
             except:
                 pass
+        print("No {} found".format("{}".format(sensorType).split("'")[1]))
 
     @staticmethod
     def getMotors():
