@@ -12,14 +12,18 @@ class Roboter():
     def __init__(self, 
                 rad_durchmesser: int=56, 
                 achsen_abstand: int=121,
+                motor_rechts:Motor = None,
+                motor_links:Motor = None,
                 speed:int=50):
         
         self.speed = speed
         self.steuer = 0
         self.gyro=PortHelper.getSensor(GyroSensor)
         self.us = PortHelper.getSensor(UltrasonicSensor)
+        self.motor_rechts = motor_rechts 
+        self.motor_links = motor_links
         motors = PortHelper.getMotors()
-        if self.gyro:
+        if not (self.motor_rechts and self.motor_links) and self.gyro:
             # gyrosensor um die richitgen motoren zu finden
             checkDegs=30
             checkSpeed=300
@@ -38,7 +42,7 @@ class Roboter():
                     self.motor_links = m 
                 m.run_angle(-1*checkSpeed,checkDegs)
 
-        if not (self.motor_rechts or self.motor_links):
+        if not (self.motor_rechts and self.motor_links):
             debug("Motoren raten")
             self.motor_rechts = motors[0]
             self.motor_links  = motors[1]
