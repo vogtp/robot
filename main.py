@@ -19,6 +19,30 @@ baseSpeed=50
 
 #sys.exit()
 
+def calibieren():
+    cs = PortHelper.getSensor(ColorSensor)
+    
+    Reden.reden("Linie")
+    while not any(brick.buttons()):
+        wait(10)
+    linie=cs.reflection()
+    Reden.reden("Linie {}".format(linie) )
+    print("Linie {}".format(linie) )
+    Reden.reden("Hintergrund")
+    while not any(brick.buttons()):
+        wait(10)
+    hintergrund=cs.reflection()
+    Reden.reden("Hintergrund {}".format(hintergrund))
+    print("Hintergrund {}".format(hintergrund))
+    Reden.reden("Start")
+    while not any(brick.buttons()):
+        wait(10)
+    targetColor=cs.reflection()
+    Reden.reden("Start {}".format(targetColor))
+    print("Start {}".format(targetColor))
+
+#calibieren()
+#sys.exit()
 
 def lineFollower():
     cs = PortHelper.getSensor(ColorSensor)
@@ -30,61 +54,59 @@ def lineFollower():
     Reden.reden("Farbe {}".format(targetColor))
 
     #pid = PID(10,5,2., targetColor, output_limits=(-190,190))
-    pidStear = PID(Kp=-2,Ki=.0,Kd=-.0, setpoint=targetColor, output_limits=(-60,60))
-    pidSpeed = PID(3,1,3, 20, output_limits=(20,100))
+    pidStear = PID(Kp=-5,Ki=-1.0,Kd=.0, setpoint=targetColor, output_limits=(-100,100))
+   # pidSpeed = PID(3,1,3, 20, output_limits=(20,100))
 
-    baseSpeed = 30
+    baseSpeed = 50
 
-    motor_rechts.dc(50)
-    motor_links.dc(50)
+   # motor_rechts.dc(50)
+   # motor_links.dc(50)
     motor_links.run(baseSpeed)
     motor_rechts.run(baseSpeed)
 
     print(motor_rechts)
-
-    spd=30
+#Linie 12
+#Hintergrund 49
+#Start 19
+    spd=baseSpeed
     while 1:
         color=cs.reflection()
-       # error = abs(color - targetColor)
+        error = abs(color - targetColor)
         stear = pidStear(color)
-        #spd = round(pidSpeed(color))
-        # if error > 10:
-        #     spd-=error
-        #     if spd < 0:
-        #         if abs(stear) < 5:
-        #             spd = 3
-        #         else:
-        #             spd = 0
-        # if error > 5:
-        #     spd-=1
-        #     if spd < 0:
-        #         spd = 3
-        # else:
-        #     spd+=1
-        # if spd > baseSpeed:
-        #     spd=baseSpeed
-        if abs(stear) > 20:
-            motor_rechts.dc(stear)
-            motor_links.dc(0)
+  
+        if color < targetColor - 4 or color > targetColor + 4:
+            motor_rechts.run(stear)
+            motor_links.run(0)
         else:
-            motor_rechts.dc(spd+stear)
-            motor_links.dc(spd)
+            motor_rechts.run(spd+stear)
+            motor_links.run(spd)
         
         print("stear {} speed {} color {} target {} ".format(stear, spd, color, targetColor))
         
+#lineFollower()
 
 def lineFollowerRobot():
+    baseSpeed=60
     cs = PortHelper.getSensor(ColorSensor)
     print("ambient {} color {} reflection {} rgb {}".format(cs.ambient(),cs.color(),cs.reflection(),cs.rgb()))
-    roboter=Roboter(speed=baseSpeed, motor_links=Motor(Port.D), motor_rechts=Motor(Port.B))
+    roboter=Roboter(speed=baseSpeed, motor_links=Motor(Port.D), motor_rechts=Motor(Port.A))
     #papiHilfe.wartenAmAnfang()
     targetColor=cs.reflection()
-
+    print("Target color ",targetColor)
+    roboter.drive(0,30,500)
+    linksColor=cs.reflection()
+    linksTresh = abs(targetColor - linksColor) / 3
+    print("linksColor {} tresh {} ".format(linksColor,linksTresh))
+    roboter.drive(0,-60,500)
+    rechtsColor=cs.reflection()
+    rechtsTresh =  abs(targetColor - rechtsColor) / 3
+    print("rechtsColor ",rechtsColor," tresh ",rechtsTresh)
+    roboter.drive(0,30,500)
     #pid = PID(10,5,2., targetColor, output_limits=(-190,190))
-    pidStear = PID(Kp=5,Ki=-0.,Kd=0.1, setpoint=targetColor, output_limits=(-120,120))
+    pidStear = PID(Kp=2,Ki=-0.,Kd=0.1, setpoint=targetColor, output_limits=(-120,120))
     pidSpeed = PID(3,1,3, 20, output_limits=(20,100))
 
-    spd=50
+    spd=baseSpeed
     while 1:
         color=cs.reflection()
         error = abs(color - targetColor)
@@ -96,13 +118,20 @@ def lineFollowerRobot():
         #         spd = 20
         # elif error < 2:
         #     spd+=5
-        if abs(stear) > 10:
+#Linie 12
+#Hintergrund 49
+#Start 19
+        if (abs(color - linksColor) < linksTresh or abs(color - rechtsColor) < rechtsTresh) and abs(stear) > 10:
             spd=0
         else:
-            spd=30
-        print("stear {} speed {} color {} target {} error {}".format(stear, spd, color, targetColor,error))
+            spd+=1
+            if spd > baseSpeed:
+                spd = baseSpeed
+        print("stear {} speed {} color {} target {} error {} {}".format(stear, spd, color, targetColor,abs(color - linksColor),abs(color - rechtsColor)))
         roboter.drive(stearing=stear, speed=spd)
-    
+
+lineFollowerRobot()
+
 def seeker():
     roboter=Roboter(speed=baseSpeed)
     us = PortHelper.getSensor(UltrasonicSensor)
@@ -145,7 +174,7 @@ def seeker():
         wait(10)
 
 
-auswahl=[ (lineFollowerRobot, "linie als roboter"), (lineFollower, "linie mit Motor"), (seeker, "rum fahren")]
+auswahl=[ (lineFollower, "linie mit Motor"), (lineFollowerRobot, "linie als roboter"), (seeker, "rum fahren"), (calibieren, "Kalibieren")]
 
 #lineFollower()
 
@@ -170,4 +199,3 @@ while 1:
             i-=1
             break
         wait(50)
-#lineFollower()

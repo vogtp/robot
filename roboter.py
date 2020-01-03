@@ -11,7 +11,7 @@ class Roboter():
 
     def __init__(self, 
                 rad_durchmesser: int=56, 
-                achsen_abstand: int=121,
+                achsen_abstand: int=130,
                 motor_rechts:Motor = None,
                 motor_links:Motor = None,
                 speed:int=50):
