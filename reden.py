@@ -8,7 +8,7 @@ import os
 class Reden():
 
     @staticmethod
-    def speak(msg:text, german=True):
+    def reden(msg:text, german=True):
         lang=""
         if german:
             lang="-vde"

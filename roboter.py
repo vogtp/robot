@@ -20,6 +20,7 @@ class Roboter():
         self.speed = speed
         self.steuer = 0
         self.gyro=PortHelper.getSensor(GyroSensor)
+        self.gyro.reset_angle(0)
         self._us = None
         self._cs = None
         self.motor_rechts = motor_rechts 
@@ -73,6 +74,12 @@ class Roboter():
             print("No UltrasonicSensor found")
         return self._us
 
+    def zeigGyro(self):
+        if self.gyro:
+            print("Gyro: Speed {} Angle {}".format(self.gyro.speed(),self.gyro.angle()))
+        else:
+            print("No Gyrosensor")
+
     @property
     def kraft(self):
         return self._kraft
@@ -110,6 +117,16 @@ class Roboter():
             self.driveBase.drive_time(speed,stearing,time)
         else:
             self.driveBase.drive(speed,stearing)
+
+    def drehenAufWinkel(self, winkel):
+        winkelPid=PID(-1,0,0,winkel, output_limits=(-100,100))
+        while not winkel == self.gyro.angle():
+            angle = self.gyro.angle()
+            stear = winkelPid(angle)
+            debug("drehenAufWinkel: ziel {} angle {} stear {}".format(winkel, angle,stear))
+            self.drive(0,stear)
+            wait(100)
+        self.stop(Stop.BRAKE)
 
     def ausweichen(self):
         # if self.us and self.us.distance() < 2550:
@@ -209,5 +226,5 @@ class Roboter():
                 wait(10)
                 btns = brick.buttons()    
             wait(10)
-            
+
         self.speedThread.stop()
