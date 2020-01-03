@@ -19,7 +19,8 @@ class Roboter():
         self.speed = speed
         self.steuer = 0
         self.gyro=PortHelper.getSensor(GyroSensor)
-        self.us = PortHelper.getSensor(UltrasonicSensor)
+        self._us = None
+        self._cs = None
         self.motor_rechts = motor_rechts 
         self.motor_links = motor_links
         motors = PortHelper.getMotors()
@@ -50,6 +51,25 @@ class Roboter():
         self.driveBase = DriveBase(self.motor_links, self.motor_rechts, rad_durchmesser, achsen_abstand)
         #self.kraft = 30
 
+    @property
+    def cs(self):
+        if not self._cs:
+            self._cs = PortHelper.getSensor(ColorSensor)
+            if self._cs:
+                print("New ColorSensor: ambient {} color {} reflection {} rgb {}".format(self._cs.ambient(),self._cs.color(),self._cs.reflection(),self._cs.rgb()))
+        if not self._cs:
+            print("No ColorSensor found")
+        return self._cs
+
+    @property
+    def us(self):
+        if not self._us:
+            self._us = PortHelper.getSensor(UltrasonicSensor)
+            if self._us:
+                print("New UltrasonicSensor: distance {} presence {}".format(self._us.distance(),self._us.presence()))
+        if not self._us:
+            print("No UltrasonicSensor found")
+        return self._us
 
     @property
     def kraft(self):
@@ -93,9 +113,9 @@ class Roboter():
         # if self.us and self.us.distance() < 2550:
         #     self.__ausweichen_pid()
         # else:
-            self.__ausweichen_simpel()
+            self.__ausweichenSimpel()
 
-    def __ausweichen_pid(self):
+    def __ausweichenPid(self):
         pid=PID(1,0,0,2551,None)
         sw = StopWatch()
         while 1 or sw.time() < 13000:
@@ -104,7 +124,7 @@ class Roboter():
             self.drive(0,a)
             wait(100)
 
-    def __ausweichen_simpel(self):
+    def __ausweichenSimpel(self):
         if not self.speed == 0:
             speed=self.speed*-1
             time=abs(100/speed)
@@ -115,3 +135,39 @@ class Roboter():
 
     def stop(self,action:Stop=Stop.COAST):
         self.driveBase.stop(action)
+
+    def linieFolgen(self):
+        debug("linieFolgen")
+        baseSpeed=self.speed # optimal: 80
+        targetColor=self.cs.reflection()
+        debug("Target color ",targetColor)
+        self.drive(0,30,500)
+        linksColor=self.cs.reflection()
+        linksTresh = abs(targetColor - linksColor) / 3
+        debug("linksColor {} tresh {} ".format(linksColor,linksTresh))
+        self.drive(0,-60,500)
+        rechtsColor=self.cs.reflection()
+        rechtsTresh =  abs(targetColor - rechtsColor) / 3
+        debug("rechtsColor {} tresh {} ".format(rechtsColor,rechtsTresh))
+        self.drive(0,30,500)
+        pidStear = PID(Kp=2,Ki=-0.,Kd=0.1, setpoint=targetColor, output_limits=(-120,120))
+
+        spd=baseSpeed
+        lastStear = 0
+        while 1:
+            color=self.cs.reflection()
+            stear = round(pidStear(color))
+            if (abs(color - linksColor) < linksTresh or abs(color - rechtsColor) < rechtsTresh) and abs(stear) > 10:
+                if spd > 10:
+                    self.stop(Stop.BRAKE)
+                    brick.sound.beep()
+                    print("**** Drive back: {} {} {}".format(-1*spd,lastStear,pidStear.dt*1000))
+                    self.drive(-1*spd,lastStear,pidStear.dt*1000)
+                spd=0
+            else:
+                spd+=1
+                if spd > baseSpeed:
+                    spd = baseSpeed
+            debug("stear {} speed {} color {} target {} error {} {}".format(stear, spd, color, targetColor,abs(color - linksColor),abs(color - rechtsColor)), level=2)
+            self.drive(stearing=stear, speed=spd)
+            lastStear = stear
