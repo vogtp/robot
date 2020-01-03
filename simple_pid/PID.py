@@ -111,7 +111,7 @@ class PID(object):
         self._last_output = output
         self._last_input = input_
         self._last_time = now
-
+        self.dt = dt
         return output
 
     @property
