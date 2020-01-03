@@ -86,7 +86,7 @@ def lineFollower():
 #lineFollower()
 
 def lineFollowerRobot():
-    baseSpeed=60
+    baseSpeed=80
     cs = PortHelper.getSensor(ColorSensor)
     print("ambient {} color {} reflection {} rgb {}".format(cs.ambient(),cs.color(),cs.reflection(),cs.rgb()))
     roboter=Roboter(speed=baseSpeed, motor_links=Motor(Port.D), motor_rechts=Motor(Port.A))
@@ -104,9 +104,10 @@ def lineFollowerRobot():
     roboter.drive(0,30,500)
     #pid = PID(10,5,2., targetColor, output_limits=(-190,190))
     pidStear = PID(Kp=2,Ki=-0.,Kd=0.1, setpoint=targetColor, output_limits=(-120,120))
-    pidSpeed = PID(3,1,3, 20, output_limits=(20,100))
+  #  pidSpeed = PID(3,1,3, 20, output_limits=(20,100))
 
     spd=baseSpeed
+    lastStear = 0
     while 1:
         color=cs.reflection()
         error = abs(color - targetColor)
@@ -122,6 +123,11 @@ def lineFollowerRobot():
 #Hintergrund 49
 #Start 19
         if (abs(color - linksColor) < linksTresh or abs(color - rechtsColor) < rechtsTresh) and abs(stear) > 10:
+            if spd > 10:
+                roboter.stop(Stop.BRAKE)
+                brick.sound.beep()
+                print("**** Drive back: {} {} {}".format(-1*spd,lastStear,pidStear.dt*1000))
+                roboter.drive(-1*spd,lastStear,pidStear.dt*1000)
             spd=0
         else:
             spd+=1
@@ -129,6 +135,7 @@ def lineFollowerRobot():
                 spd = baseSpeed
         print("stear {} speed {} color {} target {} error {} {}".format(stear, spd, color, targetColor,abs(color - linksColor),abs(color - rechtsColor)))
         roboter.drive(stearing=stear, speed=spd)
+        lastStear = stear
 
 lineFollowerRobot()
 
