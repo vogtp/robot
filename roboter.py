@@ -14,7 +14,8 @@ class Roboter():
                 achsen_abstand: int=130,
                 motor_rechts:Motor = None,
                 motor_links:Motor = None,
-                speed:int=50):
+                speed:int=50,
+                speedThread=None): # SpeedThread cannot be imported due to cyclic imports
         
         self.speed = speed
         self.steuer = 0
@@ -23,6 +24,7 @@ class Roboter():
         self._cs = None
         self.motor_rechts = motor_rechts 
         self.motor_links = motor_links
+        self.speedThread=speedThread
         motors = PortHelper.getMotors()
         if not (self.motor_rechts and self.motor_links) and self.gyro:
             # gyrosensor um die richitgen motoren zu finden
@@ -171,3 +173,41 @@ class Roboter():
             debug("stear {} speed {} color {} target {} error {} {}".format(stear, spd, color, targetColor,abs(color - linksColor),abs(color - rechtsColor)), level=2)
             self.drive(stearing=stear, speed=spd)
             lastStear = stear
+
+    def rumFahren(self):
+        baseSpeed=self.speed
+        self.speedThread.start()
+        while 1:
+            self.drive()
+            if self.speedThread and self.speedThread():
+                brick.sound.beep()
+                self.ausweichen()
+
+            if self.us and self.us.distance() < 50:
+                self.stop()
+                brick.sound.file(SoundFile.DETECTED)
+                self.ausweichen()
+
+            btns = brick.buttons()
+            while any(btns):
+                self.stop()
+                if Button.CENTER in btns:
+                    self.steuer = 0
+                    self.speed = baseSpeed
+                if Button.UP in btns:
+                    self.speed = self.speed + 5
+                if Button.DOWN in btns:
+                    self.speed = self.speed - 5
+                if Button.RIGHT in btns:
+                    self.steuer = self.steuer + 1
+                if Button.LEFT in btns:
+                    self.steuer = self.steuer - 1
+                
+                brick.display.clear()
+                brick.display.text("Speed {}".format(self.speed), (20,60))
+                brick.display.text("Steuer {}".format(self.steuer))
+                wait(10)
+                btns = brick.buttons()    
+            wait(10)
+            
+        self.speedThread.stop()
