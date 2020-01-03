@@ -10,24 +10,27 @@ from debug import debug
 class Roboter():
 
     def __init__(self, 
-                rad_durchmesser: int=56, 
-                achsen_abstand: int=130,
-                motor_rechts:Motor = None,
-                motor_links:Motor = None,
-                speed:int=50,
+                radDurchmesser: int=56, 
+                achsenAbstand: int=130,
+                motorRechts:Motor = None,
+                motorLinks:Motor = None,
+                speed:int=80,
                 speedThread=None): # SpeedThread cannot be imported due to cyclic imports
         
         self.speed = speed
         self.steuer = 0
         self.gyro=PortHelper.getSensor(GyroSensor)
-        self.gyro.reset_angle(0)
+        if self.gyro:
+            self.gyro.reset_angle(0)
         self._us = None
         self._cs = None
-        self.motor_rechts = motor_rechts 
-        self.motor_links = motor_links
+        self.motorRechts = motorRechts 
+        self.motorLinks = motorLinks
         self.speedThread=speedThread
+        if speedThread:
+            speedThread.roboter = self
         motors = PortHelper.getMotors()
-        if not (self.motor_rechts and self.motor_links) and self.gyro:
+        if not (self.motorRechts and self.motorLinks) and self.gyro:
             # gyrosensor um die richitgen motoren zu finden
             checkDegs=30
             checkSpeed=300
@@ -39,19 +42,19 @@ class Roboter():
                 if angle > 0:
                     print("Rechter Motor","{}".format(m).split("\n")[2].replace("\t",""))
                     debug(m,level=5)
-                    self.motor_rechts = m
+                    self.motorRechts = m
                 elif angle < 0:
                     print("Linker Motor","{}".format(m).split("\n")[2].replace("\t",""))
                     debug(m,level=5)
-                    self.motor_links = m 
+                    self.motorLinks = m 
                 m.run_angle(-1*checkSpeed,checkDegs)
 
-        if not (self.motor_rechts and self.motor_links):
+        if not (self.motorRechts and self.motorLinks):
             debug("Motoren raten")
-            self.motor_rechts = motors[0]
-            self.motor_links  = motors[1]
+            self.motorRechts = motors[0]
+            self.motorLinks  = motors[1]
 
-        self.driveBase = DriveBase(self.motor_links, self.motor_rechts, rad_durchmesser, achsen_abstand)
+        self.driveBase = DriveBase(self.motorLinks, self.motorRechts, radDurchmesser, achsenAbstand)
         #self.kraft = 30
 
     @property
@@ -87,8 +90,8 @@ class Roboter():
     @kraft.setter
     def kraft(self, kraft:int):
         self._kraft = kraft
-        self.motor_links.dc(kraft)
-        self.motor_rechts.dc(kraft)
+        self.motorLinks.dc(kraft)
+        self.motorRechts.dc(kraft)
 
     @property
     def speed(self):
@@ -118,14 +121,23 @@ class Roboter():
         else:
             self.driveBase.drive(speed,stearing)
 
-    def drehenAufWinkel(self, winkel):
-        winkelPid=PID(-1,0,0,winkel, output_limits=(-100,100))
-        while not winkel == self.gyro.angle():
-            angle = self.gyro.angle()
+    def drehen(self,winkel:int,fehler:int=0):
+        self.gyro.reset_angle(0)
+        self.drehenAufWinkel(winkel)
+
+    def drehenAufWinkel(self, winkel:int, fehler:int=0):
+        winkel=-1*winkel
+        winkelPid=PID(-5,0,0,winkel, output_limits=(-50,50))
+        angle = self.gyro.angle()
+        while  abs(winkel - angle) > fehler:
             stear = winkelPid(angle)
-            debug("drehenAufWinkel: ziel {} angle {} stear {}".format(winkel, angle,stear))
+            if stear < 5:
+                stear*=3
             self.drive(0,stear)
-            wait(100)
+            debug("drehenAufWinkel: ziel {} angle {} stear {}".format(winkel, angle,stear),level=2)
+            angle = self.gyro.angle()
+            #wait(10)
+        debug("drehenAufWinkel: ziel {} ist {}".format(winkel, angle ))    
         self.stop(Stop.BRAKE)
 
     def ausweichen(self):
@@ -160,16 +172,16 @@ class Roboter():
         baseSpeed=self.speed # optimal: 80
         targetColor=self.cs.reflection()
         debug("Target color ",targetColor)
-        self.drive(0,30,500)
+        self.drive(0,40,1000)
         linksColor=self.cs.reflection()
         linksTresh = abs(targetColor - linksColor) / 3
         debug("linksColor {} tresh {} ".format(linksColor,linksTresh))
-        self.drive(0,-60,500)
+        self.drive(0,-40,2000)
         rechtsColor=self.cs.reflection()
         rechtsTresh =  abs(targetColor - rechtsColor) / 3
         debug("rechtsColor {} tresh {} ".format(rechtsColor,rechtsTresh))
-        self.drive(0,30,500)
-        pidStear = PID(Kp=2,Ki=-0.,Kd=0.1, setpoint=targetColor, output_limits=(-120,120))
+        self.drive(0,40,1000)
+        pidStear = PID(Kp=-2.5,Ki=-0.,Kd=0.1, setpoint=targetColor, output_limits=(-160,160))
 
         spd=baseSpeed
         lastStear = 0
@@ -187,7 +199,7 @@ class Roboter():
                 spd+=1
                 if spd > baseSpeed:
                     spd = baseSpeed
-            debug("stear {} speed {} color {} target {} error {} {}".format(stear, spd, color, targetColor,abs(color - linksColor),abs(color - rechtsColor)), level=2)
+            debug(level=2, msg="stear {} speed {} color {} target {} error {} {}".format(stear, spd, color, targetColor,abs(color - linksColor),abs(color - rechtsColor)))
             self.drive(stearing=stear, speed=spd)
             lastStear = stear
 
@@ -200,7 +212,7 @@ class Roboter():
                 brick.sound.beep()
                 self.ausweichen()
 
-            if self.us and self.us.distance() < 50:
+            if self.us and self.us.distance() < self.speed/4:
                 self.stop()
                 brick.sound.file(SoundFile.DETECTED)
                 self.ausweichen()

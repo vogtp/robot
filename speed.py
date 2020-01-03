@@ -8,11 +8,14 @@ from threading import Thread#, Event
 from portHelper import PortHelper
 from debug import debug
 
+
+
 class SpeedThread(Thread):
 
-    def __init__(self, min_speed:float=.9, sample_size:int=10, checkIntervall:int=100, roboter:Roboter=None):
+    def __init__(self, min_speed:float=2., sample_size:int=10, checkIntervall:int=100, roboter:Roboter=None):
         self.gyro = PortHelper.getSensor(GyroSensor)
         self._minSpeed = min_speed
+        debug("min speed {}".format(min_speed))
         self._speeds = [min_speed*10] * sample_size
         self._stalled=0
         self._roboter = roboter
@@ -23,11 +26,20 @@ class SpeedThread(Thread):
 
     def run(self):
     #    f = open("{}.csv".format(self._roboter.speed),"a+")
+        print("gyro mean stalled " )
         while self.gyro:
             self._isStalled = self.isStalled()
-            debug(self.getInformation(),level=2)
-         #   f.write("{},{}\n".format(self.gyro.speed(), self.__mittelwert(self._speeds))
-            wait(self._intervall)
+           # debug(self.getInformation(),level=2)
+      #      print("{} {} {}".format(self.gyro.speed(), self.__mittelwert(self._speeds),self._stalled))
+            wait( self._intervall )
+
+    @property
+    def roboter(self):
+        return self._roboter
+
+    @roboter.setter
+    def roboter(self, roboter):
+        self._roboter = roboter
 
     def __addElement(self, lst, val):
         lst[1:] = lst[:-1]
@@ -39,14 +51,8 @@ class SpeedThread(Thread):
 
     @property
     def minSpeed(self):
-        # if self._roboter:
-        #     min = abs( self._roboter.speed / 25 )
-            
-        #     debug("Got Min speed = {}".format(min))
-        #     self._minSpeed = min
-        #     if min < self._minSpeed:
-        #         debug("Min speed = {}".format(min))
-        #         return min
+        if self._roboter:
+             return abs( self._roboter.speed / 50 )
         return self._minSpeed
 
     def __call__(self):
@@ -56,7 +62,7 @@ class SpeedThread(Thread):
         if self.gyro is None:
             return True
         if self._stopWatch.time() - self._lastSpeedCheck > self._intervall/2:
-            self.__addElement(self._speeds, self.gyro.speed())
+            self.__addElement(self._speeds, abs(self.gyro.speed()))
             self._lastSpeedCheck = self._stopWatch.time()
         speed = self.__mittelwert(self._speeds)
         return speed >= self.minSpeed

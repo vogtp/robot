@@ -32,7 +32,7 @@ class PID(object):
                  Kp=1.0, Ki=0.0, Kd=0.0,
                  setpoint=0,
                  sample_time=None,
-                 output_limits=(-20, 20),
+                 output_limits=(-60, 60),
                  auto_mode=True,
                  proportional_on_measurement=False):
         """
