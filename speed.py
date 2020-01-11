@@ -3,7 +3,6 @@ from pybricks.ev3devices import (Motor, TouchSensor, ColorSensor, InfraredSensor
 from pybricks.parameters import (Port, Stop, Direction, Button, Color, SoundFile, ImageFile, Align)
 from pybricks.tools import print, wait, StopWatch
 from pybricks.robotics import DriveBase
-from roboter import Roboter
 from threading import Thread#, Event
 from portHelper import PortHelper
 from debug import debug
@@ -12,7 +11,7 @@ from debug import debug
 
 class SpeedThread(Thread):
 
-    def __init__(self, min_speed:float=2., sample_size:int=10, checkIntervall:int=100, roboter:Roboter=None):
+    def __init__(self, min_speed:float=2., sample_size:int=10, checkIntervall:int=100, roboter=None):
         self.gyro = PortHelper.getSensor(GyroSensor)
         self._minSpeed = min_speed
         debug("min speed {}".format(min_speed))
@@ -26,7 +25,7 @@ class SpeedThread(Thread):
 
     def run(self):
     #    f = open("{}.csv".format(self._roboter.speed),"a+")
-        print("gyro mean stalled " )
+      
         while self.gyro:
             self._isStalled = self.isStalled()
            # debug(self.getInformation(),level=2)
@@ -51,8 +50,10 @@ class SpeedThread(Thread):
 
     @property
     def minSpeed(self):
-        if self._roboter:
-             return abs( self._roboter.speed / 50 )
+        try:
+            return abs( self._roboter.speed / 50 )
+        except:
+            pass
         return self._minSpeed
 
     def __call__(self):
@@ -71,7 +72,7 @@ class SpeedThread(Thread):
         if self.gyro is None:
             return False
         if not self.hasSpeed():
-            print(self.getInformation())
+            debug(self.getInformation())
             self._stalled += 1
         else:
             self._stalled -= 1

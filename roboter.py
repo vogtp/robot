@@ -6,6 +6,8 @@ from pybricks.robotics import DriveBase
 from portHelper import PortHelper
 from simple_pid.PID import PID
 from debug import debug
+from speed import SpeedThread
+from sensorMotorThread import SensorMotorThread
 
 class Roboter():
 
@@ -14,6 +16,7 @@ class Roboter():
                 achsenAbstand: int=130,
                 motorRechts:Motor = None,
                 motorLinks:Motor = None,
+                sensorMotor:Motor = None,
                 speed:int=80,
                 speedThread=None): # SpeedThread cannot be imported due to cyclic imports
         
@@ -26,6 +29,7 @@ class Roboter():
         self._cs = None
         self.motorRechts = motorRechts 
         self.motorLinks = motorLinks
+        self.sensorMotor = sensorMotor
         self.speedThread=speedThread
         if speedThread:
             speedThread.roboter = self
@@ -47,7 +51,12 @@ class Roboter():
                     print("Linker Motor","{}".format(m).split("\n")[2].replace("\t",""))
                     debug(m,level=5)
                     self.motorLinks = m 
+                else:
+                    print("Sensor Motor","{}".format(m).split("\n")[2].replace("\t",""))
+                    debug(m,level=5)
+                    self.sensorMotor = m 
                 m.run_angle(-1*checkSpeed,checkDegs)
+                #m.run_until_stalled()
 
         if not (self.motorRechts and self.motorLinks):
             debug("Motoren raten")
@@ -55,6 +64,8 @@ class Roboter():
             self.motorLinks  = motors[1]
 
         self.driveBase = DriveBase(self.motorLinks, self.motorRechts, radDurchmesser, achsenAbstand)
+        
+        debug("Robot initialised")
         #self.kraft = 30
 
     @property
@@ -164,12 +175,12 @@ class Roboter():
             self.drive(speed,0,time)
             self.drive(0,30,3000)
 
-    def stop(self,action:Stop=Stop.COAST):
+    def stop(self,action:Stop=Stop.BRAKE):
         self.driveBase.stop(action)
 
     def linieFolgen(self):
         debug("linieFolgen")
-        baseSpeed=self.speed # optimal: 80
+        baseSpeed=60
         targetColor=self.cs.reflection()
         debug("Target color ",targetColor)
         self.drive(0,40,1000)
@@ -182,6 +193,7 @@ class Roboter():
         debug("rechtsColor {} tresh {} ".format(rechtsColor,rechtsTresh))
         self.drive(0,40,1000)
         pidStear = PID(Kp=-2.5,Ki=-0.,Kd=0.1, setpoint=targetColor, output_limits=(-160,160))
+       # pidStear.tunings = (-8.340000000000002, -28.70912220309812, -0.6056925)
 
         spd=baseSpeed
         lastStear = 0
@@ -189,14 +201,14 @@ class Roboter():
             color=self.cs.reflection()
             stear = round(pidStear(color))
             if (abs(color - linksColor) < linksTresh or abs(color - rechtsColor) < rechtsTresh) and abs(stear) > 10:
-                if spd > 10:
+                if spd > baseSpeed/2:
                     self.stop(Stop.BRAKE)
                     brick.sound.beep()
-                    print("**** Drive back: {} {} {}".format(-1*spd,lastStear,pidStear.dt*1000))
-                    self.drive(-1*spd,lastStear,pidStear.dt*1000)
+                    print("**** Drive back: {} {} {}".format(-1*spd,-lastStear,pidStear.dt*1000))
+                    self.driveBase.drive_time(-1*spd,lastStear,pidStear.dt*1000)
                 spd=0
             else:
-                spd+=1
+                spd+=3
                 if spd > baseSpeed:
                     spd = baseSpeed
             debug(level=2, msg="stear {} speed {} color {} target {} error {} {}".format(stear, spd, color, targetColor,abs(color - linksColor),abs(color - rechtsColor)))
@@ -205,16 +217,28 @@ class Roboter():
 
     def rumFahren(self):
         baseSpeed=self.speed
+        self.steuer=0
+        debug("rumFahren started: speed {}".format(baseSpeed))
+        if not self.speedThread:
+            self.speedThread = SpeedThread(roboter=self)
         self.speedThread.start()
+        if self.sensorMotor:
+            sensorMotorThread=SensorMotorThread(self.sensorMotor)
+            sensorMotorThread.start()
         while 1:
             self.drive()
             if self.speedThread and self.speedThread():
                 brick.sound.beep()
                 self.ausweichen()
 
-            if self.us and self.us.distance() < self.speed/4:
+            if self.us and self.us.distance() < self.speed:
                 self.stop()
                 brick.sound.file(SoundFile.DETECTED)
+                self.ausweichen()
+
+            if self.cs and self.cs.color() is None:
+                self.stop()
+                brick.sound.file(SoundFile.OUCH)
                 self.ausweichen()
 
             btns = brick.buttons()
@@ -240,3 +264,5 @@ class Roboter():
             wait(10)
 
         self.speedThread.stop()
+        # if self.sensorMotor:
+        #     sensorMotorThread.stop()
