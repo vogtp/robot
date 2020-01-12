@@ -8,6 +8,7 @@ from simple_pid.PID import PID
 from debug import debug
 from speed import SpeedThread
 from sensorMotorThread import SensorMotorThread
+from pidThread import PidThread
 
 class Roboter():
 
@@ -178,6 +179,24 @@ class Roboter():
     def stop(self,action:Stop=Stop.BRAKE):
         self.driveBase.stop(action)
 
+    def linieFolgenThread(self, tunings=None):
+        debug("linieFolgen")
+        pidThread=PidThread(input=self.cs.reflection,robot=self)
+        if tunings:
+            debug("Custon tunings: {}".format(tunings))
+            pidThread.pidStear.tunings = tunings
+        
+        
+       # pidStear.tunings = (-8.340000000000002, -28.70912220309812, -0.6056925)
+
+        pidThread.start()
+        while 1:
+            stear=pidThread.stear
+            speed=pidThread.speed
+            self.drive(stearing=stear, speed=speed)
+            debug(level=2,showOnBrick=False,msg="LinefollowThread: stear {} speed {}".format(stear,speed))
+            wait(5)
+
     def linieFolgen(self):
         debug("linieFolgen")
         baseSpeed=60
@@ -211,7 +230,7 @@ class Roboter():
                 spd+=3
                 if spd > baseSpeed:
                     spd = baseSpeed
-            debug(level=2, msg="stear {} speed {} color {} target {} error {} {}".format(stear, spd, color, targetColor,abs(color - linksColor),abs(color - rechtsColor)))
+            debug(level=2,showOnBrick=False, msg="stear {} speed {} color {} target {} error {} {}".format(stear, spd, color, targetColor,abs(color - linksColor),abs(color - rechtsColor)))
             self.drive(stearing=stear, speed=spd)
             lastStear = stear
 
