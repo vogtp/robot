@@ -179,9 +179,9 @@ class Roboter():
     def stop(self,action:Stop=Stop.BRAKE):
         self.driveBase.stop(action)
 
-    def linieFolgenThread(self, tunings=None):
+    def linieFolgenThread(self, tunings=None,oszilationDetector:OszilationDetector=None):
         debug("linieFolgen")
-        pidThread=PidThread(input=self.cs.reflection,robot=self)
+        pidThread=PidThread(input=self.cs.reflection,robot=self, oszilationDetector=oszilationDetector)
         if tunings:
             debug("Custon tunings: {}".format(tunings))
             pidThread.pidStear.tunings = tunings
@@ -194,7 +194,7 @@ class Roboter():
             stear=pidThread.stear
             speed=pidThread.speed
             self.drive(stearing=stear, speed=speed)
-            debug(level=2,showOnBrick=False,msg="LinefollowThread: stear {} speed {}".format(stear,speed))
+            debug(level=5,showOnBrick=False,msg="LinefollowThread: stear {} speed {}".format(stear,speed))
             wait(5)
 
     def linieFolgen(self):
