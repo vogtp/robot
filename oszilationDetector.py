@@ -1,9 +1,10 @@
 from arrayFixed import ArrayFixed
-from pybricks.tools import StopWatch
+from pybricks.tools import StopWatch, wait
 from pybricks import ev3brick as brick
 from debug import debug, debugLevel
+from threading import Thread
 
-class OszilationDetector():
+class OszilationDetector(Thread):
     def __init__(self, maxElements:int=10, defaultValue=None):
         self.values = ArrayFixed(60)
         self.windowA = ArrayFixed(30)
@@ -14,9 +15,37 @@ class OszilationDetector():
         self.meanB = 0
         self.oszilating=False
         self.sw = StopWatch()
+        self.running=False
 
+    
+
+    def run(self):
+        debug("OszilationDetector thread started")
+        self.running=True
+        oldInput=0
+        while self.running:
+            try:
+                if hasattr(self, "input") and self.input != oldInput:
+                    self._add(self.input)
+                    oldInput=self.input
+            except:
+                debug("Oszilationdetection: Cannot set input")
+                wait(100)
+            wait(2)
+        self.running=False
+
+            
+
+        debug("OszilationDetector thread ended")
 
     def add(self,value):
+        if self.running:
+            self.input=value
+        else:
+            self._add(value)
+
+
+    def _add(self,value):
         time=self.sw.time()
         self.values.add((time, value))
         self.windowB.add((time, abs(value)))

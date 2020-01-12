@@ -40,9 +40,8 @@ class PidThread(Thread):
         lastStear = 0
         debug("PidThread starting main loop")
         if self.oszilationDetector:
-            od=self.oszilationDetector
-            dd=DataDumper()
-            print("pid thread: oszilation detection active")
+            self.oszilationDetector.start()
+            debug("pid thread: oszilation detection active")
         while 1:
             input=self.input()
             self.stear = round(self.pidStear(input))
@@ -51,10 +50,9 @@ class PidThread(Thread):
                 if self.oszilationDetector.oszilating:
                    # self.robot.drive(0,-30,300)
                     tunings = self.pidStear.tunings
-                    self.pidStear.tunings = ( tunings[0] + 0.01, tunings[1]+ 0.01, tunings[2] - 0.01)
+                    self.pidStear.tunings = ( tunings[0] * 1.01, tunings[1] * 1.01, tunings[2] * 0.99)
                     debug("pid thread: new tunings {}".format(tunings))
-               # dd.add(meanA=od.meanA, meanB=od.meanB, meanDiff=od.meanDiff, meanQuoat=od.meanQuoat, tuning=tunings[0], stear=self.stear, input=input)    
-
+               
             if (abs(input - self.linksInput) < self.linksTresh or abs(input - self.rechtsInput) < self.rechtsTresh) and abs(self.stear) > 10:
                 if spd > self.baseSpeed/2:
                     self.robot.stop(Stop.BRAKE)
