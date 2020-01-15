@@ -50,7 +50,7 @@ class PidThread(Thread):
                 if self.oszilationDetector.oszilating:
                    # self.robot.drive(0,-30,300)
                     tunings = self.pidStear.tunings
-                    self.pidStear.tunings = ( tunings[0] * 1.01, tunings[1] * 1.01, tunings[2] * 0.99)
+                    self.pidStear.tunings = ( tunings[0] + 0.01, tunings[1] + 0.01, tunings[2] - 0.01)
                     debug("pid thread: new tunings {}".format(tunings))
                
             if (abs(input - self.linksInput) < self.linksTresh or abs(input - self.rechtsInput) < self.rechtsTresh) and abs(self.stear) > 10:

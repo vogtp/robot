@@ -9,6 +9,10 @@ from debug import debug
 from speed import SpeedThread
 from sensorMotorThread import SensorMotorThread
 from pidThread import PidThread
+from reden import Reden
+from oszilationDetector import OszilationDetector
+
+
 
 class Roboter():
 
@@ -194,7 +198,7 @@ class Roboter():
             stear=pidThread.stear
             speed=pidThread.speed
             self.drive(stearing=stear, speed=speed)
-            debug(level=5,showOnBrick=False,msg="LinefollowThread: stear {} speed {}".format(stear,speed))
+            #debug(level=5,showOnBrick=False,msg="LinefollowThread: stear {} speed {}".format(stear,speed))
             wait(5)
 
     def linieFolgen(self):
@@ -285,3 +289,29 @@ class Roboter():
         self.speedThread.stop()
         # if self.sensorMotor:
         #     sensorMotorThread.stop()
+
+    def menu(self):
+        r=self
+        auswahl=[ (lambda : r.linieFolgenThread(oszilationDetector=OszilationDetector()), "healing line follower"),(r.linieFolgenThread, "thread line follower"),(r.linieFolgen, "line follower"), (r.rumFahren, "seaker")]
+        i=0
+        while 1:
+            if i < 0:
+                i = len(auswahl) -1 
+            if not i < len(auswahl):
+                i=0
+            debug(i)
+            code, name = auswahl[i]
+            Reden.reden(name,False)
+            btn = []
+            while not any(btn):
+                btn = brick.buttons()
+                if Button.CENTER in btn:
+                    Reden.reden(name,False)
+                    code()
+                if Button.LEFT in btn:
+                    i+=1
+                    break
+                if Button.RIGHT in btn:
+                    i-=1
+                    break
+                wait(50)
