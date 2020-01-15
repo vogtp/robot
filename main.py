@@ -97,33 +97,6 @@ while 1:
 sys.exit()
 
 r=Roboter()
-r.rumFahren()
+r.menu()
 
 sys.exit()
-
-r=Roboter()
-auswahl=[ (r.linieFolgenThread, "threadded line follow"),(r.linieFolgen, "line follow"), (r.rumFahren, "seaker")]
-
-
-i=0
-while 1:
-    if i < 0:
-        i = len(auswahl) -1 
-    if not i < len(auswahl):
-        i=0
-    debug(i)
-    code, name = auswahl[i]
-    Reden.reden(name,False)
-    btn = []
-    while not any(btn):
-        btn = brick.buttons()
-        if Button.CENTER in btn:
-            Reden.reden(name,False)
-            code()
-        if Button.LEFT in btn:
-            i+=1
-            break
-        if Button.RIGHT in btn:
-            i-=1
-            break
-        wait(50)

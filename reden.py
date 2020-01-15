@@ -8,9 +8,9 @@ import os
 class Reden():
 
     @staticmethod
-    def reden(msg:text, german=True):
+    def reden(msg:str, german=True):
         lang=""
         if german:
             lang="-vde"
-        os.system("/usr/bin/espeak -a 200 --stdout '{}' {} > out.wav".format(msg,lang))
+        os.system("/usr/bin/espeak -a 200  -s 130 --stdout '{}' {} > out.wav".format(msg,lang))
         brick.sound.file("out.wav",volume=100)
