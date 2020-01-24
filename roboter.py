@@ -183,23 +183,23 @@ class Roboter():
     def stop(self,action:Stop=Stop.BRAKE):
         self.driveBase.stop(action)
 
-    def linieFolgenThread(self, tunings=None,oszilationDetector:OszilationDetector=None):
+    def linieFolgenThread(self, tuningsStear=None,tuningsSpeed=None,oszilationDetector:OszilationDetector=None):
         debug("linieFolgen")
         pidThread=PidThread(input=self.cs.reflection,robot=self, oszilationDetector=oszilationDetector)
-        if tunings:
-            debug("Custon tunings: {}".format(tunings))
-            pidThread.pidStear.tunings = tunings
+        if tuningsStear:
+            debug("Custon stear tunings: {}".format(tuningsStear))
+            pidThread.pidStear.tunings = tuningsStear
+        if tuningsSpeed:
+            debug("Custon speed tunings: {}".format(tuningsSpeed))
+            pidThread.pidSpeed.tunings = tuningsSpeed
         
         
        # pidStear.tunings = (-8.340000000000002, -28.70912220309812, -0.6056925)
 
         pidThread.start()
         while 1:
-            stear=pidThread.stear
-            speed=pidThread.speed
-            self.drive(stearing=stear, speed=speed)
-            #debug(level=5,showOnBrick=False,msg="LinefollowThread: stear {} speed {}".format(stear,speed))
-            wait(5)
+            self.drive(stearing=pidThread.stear, speed=pidThread.speed)
+            #wait(5)
 
     def linieFolgen(self):
         debug("linieFolgen")
@@ -227,8 +227,8 @@ class Roboter():
                 if spd > baseSpeed/2:
                     self.stop(Stop.BRAKE)
                     brick.sound.beep()
-                    print("**** Drive back: {} {} {}".format(-1*spd,-lastStear,pidStear.dt*1000))
-                    self.driveBase.drive_time(-1*spd,lastStear,pidStear.dt*1000)
+                    print("**** Drive back: {} {} {}".format(-1*spd,lastStear,pidStear.dt*1000))
+                    self.driveBase.drive_time(-1*spd,-lastStear,pidStear.dt*1000)
                 spd=0
             else:
                 spd+=3

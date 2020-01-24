@@ -3,6 +3,7 @@ from pybricks.tools import StopWatch, wait
 from pybricks import ev3brick as brick
 from debug import debug, debugLevel
 from threading import Thread
+import _thread
 
 class OszilationDetector(Thread):
     def __init__(self, maxElements:int=10, defaultValue=None):
@@ -16,6 +17,7 @@ class OszilationDetector(Thread):
         self.oszilating=False
         self.sw = StopWatch()
         self.running=False
+        self.rlock = _thread.allocate_lock()
 
     
 
@@ -25,9 +27,13 @@ class OszilationDetector(Thread):
         oldInput=0
         while self.running:
             try:
-                if hasattr(self, "input") and self.input != oldInput:
-                    self._add(self.input)
-                    oldInput=self.input
+                if hasattr(self, "input"):
+                    self.rlock.acquire()
+                    input = self.input
+                    self.rlock.release()
+                    if input != oldInput:
+                        self._add(input)
+                        oldInput=input
             except:
                 debug("Oszilationdetection: Cannot set input")
                 wait(100)
@@ -40,7 +46,9 @@ class OszilationDetector(Thread):
 
     def add(self,value):
         if self.running:
+            self.rlock.acquire()
             self.input=value
+            self.rlock.release()
         else:
             self._add(value)
 
