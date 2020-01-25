@@ -1,4 +1,5 @@
 __pycache__/
+__murx__/
 .vscode/
 *.pyc
 venv/
