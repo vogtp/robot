@@ -192,9 +192,6 @@ class Roboter():
         if tuningsSpeed:
             debug("Custon speed tunings: {}".format(tuningsSpeed))
             pidThread.pidSpeed.tunings = tuningsSpeed
-        
-        
-       # pidStear.tunings = (-8.340000000000002, -28.70912220309812, -0.6056925)
 
         pidThread.start()
         while 1:
@@ -292,7 +289,7 @@ class Roboter():
 
     def menu(self):
         r=self
-        auswahl=[ (lambda : r.linieFolgenThread(oszilationDetector=OszilationDetector()), "healing line follower"),(r.linieFolgenThread, "thread line follower"),(r.linieFolgen, "line follower"), (r.rumFahren, "seaker")]
+        auswahl=[ (r.linieFolgenThread, "thread line follower"),(r.linieFolgen, "line follower"), (lambda : r.linieFolgenThread(oszilationDetector=OszilationDetector()), "healing line follower"), (r.rumFahren, "seaker")]
         i=0
         while 1:
             if i < 0:

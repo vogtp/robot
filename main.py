@@ -23,21 +23,14 @@ from dataDumper import DataDumper
 from oszilationDetector import OszilationDetector
 import os
 
-os.system("setfont Lat15-TerminusBold32x16")
-
-brick.display.text("test",(30,30))
-brick.sound.beep()
-while 1:
-    wait(19)
-sys.exit()
 
 
 debugLevel=30
 
 r=Roboter(motorLinks=Motor(Port.A),motorRechts=Motor(Port.D))
+#r.linieFolgenThread(oszilationDetector=OszilationDetector())
+r.linieFolgenThread()
 r.menu()
-r.linieFolgenThread(oszilationDetector=OszilationDetector())
-
 
 self=r
 targetColor=self.cs.reflection()
