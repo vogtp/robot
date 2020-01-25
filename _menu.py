@@ -2,4 +2,4 @@
 
 from roboter import Roboter
 
-Roboter().menu
+Roboter().menu()
