@@ -21,33 +21,37 @@ class PidThread(Thread):
         self.stear = 0
         self.targetInput=input()
         debug("Target input ",self.targetInput)
-        self.pidStear = PID(Kp=-2.5,Ki=-0.,Kd=0.1, setpoint=self.targetInput, output_limits=(-160,160))
-        self.pidStear.tunings=(-2.42, -0.43, 0.07)
+        self.pidStear = PID(Kp=-2.5,Ki=-0.,Kd=0.1, setpoint=self.targetInput, output_limits=(-60,60))
+      #  self.pidStear.tunings=(-2.42, -0.43, 0.07)
         self.pidSpeed = PID(Kp=1,Ki=5, Kd=.5, setpoint=self.targetInput, output_limits=(-10,10))
-        robot.drive(0,40,1000)
+        robot.drive(0,20,1000)
         self.linksInput=input()
-        self.linksTresh = abs(self.targetInput - self.linksInput) / 3
+        self.linksTresh = self.linksInput + (abs(self.targetInput - self.linksInput) / 3)
         debug("links input {} tresh {} ".format(self.linksInput,self.linksTresh))
-        robot.drive(0,-40,2000)
+        robot.drive(0,-20,2000)
         self.rechtsInput=input()
-        self.rechtsTresh =  abs(self.targetInput - self.rechtsInput) / 3
+        self.rechtsTresh =  self.rechtsInput- (abs(self.targetInput - self.rechtsInput) / 3)
         debug("rechts input {} tresh {} ".format(self.rechtsInput,self.rechtsTresh))
-        robot.drive(0,40,1000)
+        robot.drive(0,20,1000)
         
     def speedCalcManual(self, input):
         spd=self.speed
         if (abs(input - self.linksInput) < self.linksTresh or abs(input - self.rechtsInput) < self.rechtsTresh) and abs(self.stear) > 10:
             if spd > self.baseSpeed/2:
-                self.robot.stop(Stop.BRAKE)
+                spd-=1
+                #self.robot.stop(Stop.BRAKE)
                 if debugLevel > 3:
                     brick.sound.beep()
                 #print("**** Drive back: {} {} {}".format(-1*spd,-lastStear,self.pidStear.dt*1000))
                 #self.robot.driveBase.drive_time(-1*spd,lastStear,self.pidStear.dt*1000)
-            spd=self.baseSpeed*0.1
+            # spd=self.baseSpeed*0.1
+            #spd-=1
         else:
             spd+=1
-            if spd > self.baseSpeed:
-                spd = self.baseSpeed
+        if spd > self.baseSpeed:
+            spd = self.baseSpeed
+        if spd < 10:
+            spd = 10
         return spd
 
     def speedCalcPid(self, input):
